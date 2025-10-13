@@ -1,5 +1,6 @@
 using MergeSolutions.Core;
 using MergeSolutions.Core.Models;
+using MergeSolutions.Core.Parsers;
 using MergeSolutions.Core.Services;
 
 // ReSharper disable LocalizableElement
@@ -183,18 +184,30 @@ namespace MergeSolutions.UI
                 treeViewSolutions.BeginUpdate();
                 treeViewSolutions.Nodes.Clear();
                 treeViewSolutions.CheckBoxes = true;
-                foreach (var solutionEntity in _mergePlan.Solutions.OrderBy(s => s.NodeName))
+                foreach (var solutionEntity in _mergePlan.Solutions.OrderBy(s => s.NodeName).ToArray())
                 {
                     if (solutionEntity.RelativePath == null)
                     {
                         continue;
                     }
 
-                    var solutionInfo = _solutionService.ParseSolution(solutionEntity.RelativePath, _mergePlan.RootDir);
+                    SolutionInfo solutionInfo;
+                    try
+                    {
+                        solutionInfo = _solutionService.ParseSolution(solutionEntity.RelativePath, _mergePlan.RootDir);
+                    }
+                    catch (DirectoryNotFoundException e)
+                    {
+                        Program.ShowExceptionMessage($"Warning: {solutionEntity.NodeName} is removed from the merge plan.", e,
+                            $"Cannot load solution {solutionEntity.NodeName}");
+                        _mergePlan.Solutions.Remove(solutionEntity);
+                        continue;
+                    }
+
                     solutionEntity.NodeName ??= solutionInfo.Name;
                     var solutionTreeNode = new SolutionTreeNode(solutionEntity);
 
-                    solutionTreeNode.ContextMenuStrip = new ContextMenuStrip()
+                    solutionTreeNode.ContextMenuStrip = new ContextMenuStrip
                     {
                         Items =
                         {
