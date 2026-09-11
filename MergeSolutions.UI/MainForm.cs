@@ -196,7 +196,7 @@ namespace MergeSolutions.UI
                     {
                         solutionInfo = _solutionService.ParseSolution(solutionEntity.RelativePath, _mergePlan.RootDir);
                     }
-                    catch (DirectoryNotFoundException e)
+                    catch (Exception e) when (e is DirectoryNotFoundException or FileNotFoundException)
                     {
                         Program.ShowExceptionMessage($"Warning: {solutionEntity.NodeName} is removed from the merge plan.", e,
                             $"Cannot load solution {solutionEntity.NodeName}");
